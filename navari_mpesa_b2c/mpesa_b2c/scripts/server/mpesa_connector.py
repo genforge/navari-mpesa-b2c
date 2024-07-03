@@ -145,7 +145,6 @@ class MpesaB2CConnector(ConnectorBaseClass):
             {
                 "QueueTimeOutURL": callback_url,
                 "ResultURL": callback_url,
-                "PartyA": "600426",
             }
         )
         headers = {
