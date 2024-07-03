@@ -6,6 +6,26 @@ app_email = "solutions@navari.co.ke"
 app_license = "GNU Affero General Public License v3.0"
 required_apps = ["frappe/erpnext/hrms/payments"]
 
+fixtures = [
+    {
+        "doctype": "Custom Field",
+        "filters": [
+            [
+                "dt",
+                "in",
+                (
+                    "Expense Claim",
+                    "Employee Advance",
+                    "Salary Slip",
+                    "Purchase Invoice",
+                ),
+            ],
+            ["module", "=", "MPesa B2C"],
+            ["is_system_generated", "=", 0],
+        ],
+    }
+]
+
 # Includes in <head>
 # ------------------
 
