@@ -52,6 +52,16 @@ class MpesaB2CConnector(ConnectorBaseClass):
         self.attach(ErrorObserver())
 
     def authenticate(self, setting: str) -> dict[str, str | datetime] | None:
+        """Authenticate at following endpoint:
+        https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials (for sandbox)
+
+        Args:
+            setting (str): The Mpesa Settings record to fetch Credentials from
+
+        Returns:
+            dict[str, str | datetime] | None: The fetched response if request was successful.
+            Otherwise an error is raised.
+        """
         authenticate_uri = "/oauth/v1/generate?grant_type=client_credentials"
         authenticate_url = f"{self.base_url}{authenticate_uri}"
 
@@ -94,6 +104,15 @@ class MpesaB2CConnector(ConnectorBaseClass):
     def make_b2c_payment_request(
         self, request_data: B2CRequestDefinition
     ) -> str | None:
+        """Initiates a B2C Payment Request to Daraja at following link:
+        https://sandbox.safaricom.co.ke/mpesa/b2c/v3/paymentrequest (for sandbox)
+
+        Args:
+            request_data (B2CRequestDefinition): The data used to generate the request JSON
+
+        Returns:
+            str | None: The Initial response after making the request
+        """
         # Check if valid Access Token exists
         token = frappe.db.get_value(
             DARAJA_ACCESS_TOKENS_DOCTYPE,
@@ -116,60 +135,56 @@ class MpesaB2CConnector(ConnectorBaseClass):
             ]
 
         else:
-            bearer_token = get_decrypted_password(
+            self.authentication_token = get_decrypted_password(
                 DARAJA_ACCESS_TOKENS_DOCTYPE, token.name, "access_token"
             )
 
-            saf_url = f"{self.base_url}/mpesa/b2c/v3/paymentrequest"
-            callback_url = f"https://{urlparse(get_request_site_address(full_address=True)).hostname}/api/method/navari_mpesa_b2c.mpesa_b2c.scripts.server.mpesa_connector.results_callback_url"
-            payload = request_data.to_json(
-                {
-                    "QueueTimeOutURL": callback_url,
-                    "ResultURL": callback_url,
-                    "PartyA": "600426",
-                }
-            )
-            headers = {
-                "Authorization": f"Bearer {bearer_token}",
-                "Content-Type": "application/json",
+        saf_url = f"{self.base_url}/mpesa/b2c/v3/paymentrequest"
+        callback_url = f"https://{urlparse(get_request_site_address(full_address=True)).hostname}/api/method/navari_mpesa_b2c.mpesa_b2c.scripts.server.mpesa_connector.results_callback_url"
+        payload = request_data.to_json(
+            {
+                "QueueTimeOutURL": callback_url,
+                "ResultURL": callback_url,
+                "PartyA": "600426",
             }
+        )
+        headers = {
+            "Authorization": f"Bearer {self.authentication_token}",
+            "Content-Type": "application/json",
+        }
 
-            # Create Integration Request
-            self.integration_request = create_request_log(
-                url=saf_url,
-                is_remote_request=1,
+        # Create Integration Request
+        self.integration_request = create_request_log(
+            url=saf_url,
+            is_remote_request=1,
+            data=payload,
+            service_name="Mpesa",
+            name=request_data.OriginatorConversationID,
+            error=None,
+            request_headers=headers,
+        ).name
+
+        try:
+            response = requests.post(
+                saf_url,
                 data=payload,
-                service_name="Mpesa",
-                name=request_data.OriginatorConversationID,
-                error=None,
-                request_headers=headers,
-            ).name
-
-            try:
-                response = requests.post(
-                    saf_url,
-                    data=payload,
-                    headers=headers,
-                    timeout=60,
-                )
-
-                response.raise_for_status()
-
-            except requests.HTTPError as e:
-                self.error = e
-                self.notify()
-
-            except requests.ConnectionError as e:
-                self.error = e
-                self.notify()
-
-            frappe.msgprint(
-                "Payment Request accepted for processing",
-                title="Successful",
-                indicator="green",
+                headers=headers,
+                timeout=60,
             )
 
-            return response.json()
+            response.raise_for_status()
+
+        except (requests.HTTPError, requests.ConnectionError) as e:
+            self.error = e
+            self.notify()
+
+        frappe.msgprint(
+            "Payment Request accepted for processing",
+            title="Successful",
+            indicator="green",
+        )
+
+        return response.json()
 
 
 @frappe.whitelist(allow_guest=True)
