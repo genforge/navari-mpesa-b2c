@@ -93,7 +93,9 @@ fixtures = [
 # Uninstallation
 # ------------
 
-# before_uninstall = "navari_mpesa_b2c.uninstall.before_uninstall"
+before_uninstall = (
+    "navari_mpesa_b2c.mpesa_b2c.scripts.setup.uninstall.delete_custom_fields"
+)
 # after_uninstall = "navari_mpesa_b2c.uninstall.after_uninstall"
 
 # Integration Setup
