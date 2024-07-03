@@ -41,9 +41,6 @@ class MpesaB2CConnector(ConnectorBaseClass):
         self.app_key = app_key
         self.app_secret = app_secret
 
-        self.error = None
-        self.integration_request = None
-
         if env == "sandbox":
             self.base_url = URLS.SANDBOX.value
         else:

@@ -27,6 +27,9 @@ class ConnectorBaseClass(ConnectorAbstractClass):
     """Base class for Connector Classes"""
 
     def __init__(self) -> None:
+        self.error: str | Exception | None = None
+        self.integration_request: str | None = None
+
         self._observers: list[Observer] = []
 
     def attach(self, observer: Observer) -> None:
@@ -58,18 +61,19 @@ class Observer(ABC):
 class ErrorObserver(Observer):
     """Error Observer concrete class"""
 
-    def update(self, notifier):
-        frappe.log_error(
-            title="HTTPError",
-            message=notifier.error,
-        )
-        update_integration_request(
-            notifier.integration_request,
-            status="Failed",
-            error=str(notifier.error),
-        )
-        frappe.throw(
-            str(notifier.error),
-            frappe.DataError,
-            title="HTTPError",
-        )
+    def update(self, notifier: ConnectorBaseClass):
+        if notifier.error:
+            frappe.log_error(
+                title="HTTPError",
+                message=notifier.error,
+            )
+            update_integration_request(
+                notifier.integration_request,
+                status="Failed",
+                error=str(notifier.error),
+            )
+            frappe.throw(
+                str(notifier.error),
+                frappe.DataError,
+                title="HTTPError",
+            )
