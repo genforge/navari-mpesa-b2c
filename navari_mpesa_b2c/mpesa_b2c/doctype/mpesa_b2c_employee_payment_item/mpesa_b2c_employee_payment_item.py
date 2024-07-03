@@ -14,6 +14,13 @@ class MPesaB2CEmployeePaymentItem(Document):
             self.originator_conversation_id = str(uuid4())
 
         if self.amount and self.record_amount:
+            if self.amount < 10:
+                frappe.throw(
+                    "Payment Amount cannot be less than Kshs. 10",
+                    frappe.ValidationError,
+                    title="Validation Error",
+                )
+
             if self.amount > self.record_amount:
                 frappe.throw(
                     "Payment Amount cannot be greater than Record Amount",
@@ -24,7 +31,7 @@ class MPesaB2CEmployeePaymentItem(Document):
         if self.partyb:
             mobile_no = sanitise_phone_number(self.partyb)
 
-            if not validate_receiver_mobile_number(mobile_no):
+            if not is_valid_receiver_contact(mobile_no):
                 frappe.throw(
                     f"Incorrect Receiver's Mobile Number: {self.partyb}",
                     frappe.ValidationError,
@@ -46,7 +53,7 @@ def sanitise_phone_number(phone_number: str) -> str:
     return phone_number
 
 
-def validate_receiver_mobile_number(receiver: str) -> bool:
+def is_valid_receiver_contact(receiver: str) -> bool:
     """Validates the Receiver's mobile number"""
     receiver = receiver.replace("+", "").strip()
     pattern1 = re.compile(r"^2547\d{8}$")

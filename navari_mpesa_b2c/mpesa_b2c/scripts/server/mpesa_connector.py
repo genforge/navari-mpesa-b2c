@@ -177,12 +177,6 @@ class MpesaB2CConnector(ConnectorBaseClass):
             self.error = e
             self.notify()
 
-        frappe.msgprint(
-            "Payment Request accepted for processing",
-            title="Successful",
-            indicator="green",
-        )
-
         return response.json()
 
 

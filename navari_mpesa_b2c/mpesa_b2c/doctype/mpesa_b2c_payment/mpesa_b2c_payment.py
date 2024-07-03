@@ -72,3 +72,7 @@ class MPesaB2CPayment(Document):
                         Occassion=self.occassion,
                     )
                 )
+
+            frappe.msgprint(
+                "Payment Request Initiated.", title="Payment Request", indicator="green"
+            )
