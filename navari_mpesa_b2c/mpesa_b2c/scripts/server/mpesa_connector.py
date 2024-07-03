@@ -188,12 +188,14 @@ class MpesaB2CConnector(ConnectorBaseClass):
 
 @frappe.whitelist(allow_guest=True)
 def results_callback_url(**kwargs) -> None:
+    """Callback URL"""
     result = frappe._dict(kwargs["Result"])
 
-    if frappe.db.exists("Integration Request", result.OriginatorConversationID):
+    if result.ResultCode != 0:
+        # If Failure Response
         update_integration_request(
             result.OriginatorConversationID,
-            status="Completed",
+            "Failed",
             output=result,
+            error=result.ResultDesc,
         )
-    frappe.msgprint("Callback received")
