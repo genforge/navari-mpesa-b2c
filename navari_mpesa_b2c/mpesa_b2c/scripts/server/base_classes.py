@@ -50,7 +50,7 @@ class Observer(ABC):
     """Observer Abstract Class"""
 
     @abstractmethod
-    def update(self, notifier):
+    def update(self, notifier: ConnectorBaseClass) -> None:
         """Method that reacts to specific state in the notifier when called
 
         Args:
@@ -61,7 +61,7 @@ class Observer(ABC):
 class ErrorObserver(Observer):
     """Error Observer concrete class"""
 
-    def update(self, notifier: ConnectorBaseClass):
+    def update(self, notifier: ConnectorBaseClass) -> None:
         if notifier.error:
             frappe.log_error(
                 title="HTTPError",
