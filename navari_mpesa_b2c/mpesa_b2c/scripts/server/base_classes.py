@@ -54,7 +54,7 @@ class Observer(ABC):
         """Method that reacts to specific state in the notifier when called
 
         Args:
-            notifier (MpesaB2CConnector): The Notifier (calling class)
+            notifier (ConnectorBaseClass): The Notifier (calling class)
         """
 
 
