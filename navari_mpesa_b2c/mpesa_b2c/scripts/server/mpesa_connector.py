@@ -2,12 +2,13 @@ from datetime import datetime, timedelta
 from enum import Enum
 from urllib.parse import urlparse
 
-import frappe
 import requests
+from requests.auth import HTTPBasicAuth
+
+import frappe
 from frappe.integrations.utils import create_request_log
 from frappe.utils import get_request_site_address
 from frappe.utils.password import get_decrypted_password
-from requests.auth import HTTPBasicAuth
 
 from ...utils.definitions import B2CRequestDefinition
 from ...utils.doctype_names import DARAJA_ACCESS_TOKENS_DOCTYPE
@@ -30,7 +31,7 @@ class MpesaB2CConnector(ConnectorBaseClass):
         env: str = "sandbox",
         app_key: bytes | str | None = None,
         app_secret: bytes | str | None = None,
-    ):
+    ) -> None:
         """Setup configuration for Mpesa connector and generate new access token."""
         super().__init__()
 

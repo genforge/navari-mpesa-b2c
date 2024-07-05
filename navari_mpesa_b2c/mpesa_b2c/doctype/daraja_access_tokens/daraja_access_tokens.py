@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 from datetime import datetime
+
 import frappe
 from frappe.model.document import Document
 
