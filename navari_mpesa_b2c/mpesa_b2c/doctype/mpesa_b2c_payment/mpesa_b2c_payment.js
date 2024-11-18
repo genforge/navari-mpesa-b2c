@@ -3,57 +3,6 @@
 
 frappe.ui.form.on("MPesa B2C Payment", {
   refresh: function (frm) {
-    if (
-      frm.doc.docstatus === 1 &&
-      (frm.doc.status === "Not Initiated" || frm.doc.status === "Timed-Out")
-    ) {
-      // Only render the Initiate Payment button if document is saved, and
-      // payment status is "Not Initiated" or "Timed-Out"
-      frm.add_custom_button(
-        "Initiate Payment",
-        async function () {
-          frappe.call({
-            method:
-              "navari_mpesa_b2c.mpesa_b2c.doctype.mpesa_b2c_payment.mpesa_b2c_payment.initiate_payment",
-            args: {
-              // Create request with a partial payload
-              partial_payload: {
-                name: frm.doc.name,
-                OriginatorConversationID: frm.doc.originatorconversationid,
-                CommandID: frm.doc.commandid,
-                Amount: frm.doc.amount,
-                PartyB: frm.doc.partyb,
-                Remarks: frm.doc.remarks,
-                Occassion: frm.doc.occassion,
-              },
-            },
-            callback: function (response) {
-              // Redirect upon response. Response received is success since error responses
-              // raise an HTTPError on the server-side
-              if (response.message === "No certificate file found in server") {
-                frappe.msgprint({
-                  title: __("Authentication Error"),
-                  indicator: "red",
-                  message: __(response.message),
-                });
-              } else if (response.message === "successful") {
-                location.reload();
-              } else {
-                // TODO: Add proper cases
-                frappe.msgprint(`${response}`);
-              }
-            },
-          });
-        },
-        __("MPesa Actions")
-      );
-    }
-
-    if (!frm.doc.originatorconversationid) {
-      // Set uuidv4 compliant string
-      frm.set_value("originatorconversationid", generateUUIDv4());
-    }
-
     // Set filters for party type field
     frm.set_query("party_type", function () {
       return {
@@ -88,8 +37,6 @@ frappe.ui.form.on("MPesa B2C Payment", {
     frm.set_value("items", []);
     const doctype = frm.doc.doctype_to_pay_against;
 
-    console.log(frm.doc.start_date, frm.doc.end_date);
-
     // Fetch relevant records and set relevant fields in items table
     frappe.db
       .get_list(doctype, {
@@ -110,11 +57,16 @@ frappe.ui.form.on("MPesa B2C Payment", {
               record: data.name,
               receiver_name: data.employee ?? data.supplier,
               partyb: null,
-              record_amount: data.base_rounded_total,
+              record_amount:
+                data.base_rounded_total ?? data.total_sanctioned_amount,
             };
 
             // Apply fetching contact strategy according to document
-            if (doctype === "Salary Slip") {
+            if (
+              doctype === "Salary Slip" ||
+              doctype === "Expense Claim" ||
+              doctype === "Employee Advance"
+            ) {
               const contact = await frappe.db.get_value(
                 "Employee",
                 { name: data.employee ?? null },
@@ -156,9 +108,32 @@ frappe.ui.form.on("MPesa B2C Payment", {
               `No records fetched for doctype <b>${doctype}</b> with the <b>date filters specified</b>`
             ),
             indicator: "red",
-            title: "Error",
+            title: "No Data Fetched",
           });
       });
+  },
+  mpesa_setting: function (frm) {
+    frappe.db.get_value(
+      "Company",
+      { name: frappe.boot.sysdefaults.company },
+      ["abbr"],
+      (companyAbbrResponse) => {
+        frappe.db.get_value(
+          "Account",
+          {
+            name: [
+              "like",
+              `Mpesa-${frm.doc.mpesa_setting} - ${companyAbbrResponse.abbr}`,
+            ],
+          },
+          ["name"],
+          (response) => {
+            frm.refresh_fields("account_paid_from");
+            frm.set_value("account_paid_from", response.name);
+          }
+        );
+      }
+    );
   },
 });
 
